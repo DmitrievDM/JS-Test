@@ -1,0 +1,142 @@
+var stdin = process.openStdin();
+
+stdin.on('data', function (data) {
+    var input = data.toString();
+    var arr_input = input.split("\n");
+    var nodes = [];                             //Tree
+    var coded_string;                           //Закодированная строка
+    var num = 0;                                //Количество символов
+    var len = 0;                                //Длина строки
+
+    //Узлы бинарного дерева
+    function Node(sum = 0, code = "", chars = "", left = null, right = null, used = 0) {
+        this.sum = sum;                         //частота символов
+        this.code = code;                       //код символа / узла
+        this.chars = chars;                     //символы
+        this.left = left;                       //левый узел
+        this.right = right;                     //правый узел
+        this.used = used;                       //признак использования
+    }
+    //Сортировщик узлов дерева по коду по убыванию  - nodes.sort(NodeSortDown);
+    function NodeSortDown(a, b) {
+        return b.code.localeCompare(a.code);
+
+    }
+    //Сортировщик узлов дерева по сумме по убыванию  - nodes.sort(NodeSortUp);
+    function NodeSortUp(a, b) {
+        if (a.sum > b.sum) return 1;
+        else if (a.sum < b.sum) return -1;
+        else return 0;
+    }
+
+    //Ищем индекс незадействованного минимального узла
+    function UnusedNode() {
+        let count = nodes.length;
+        let j = -1;
+        for (let k = 0; k < count; k++) {
+            if (nodes[k].used == 0) {
+                j = NextNode(k);
+                if (j >= 0) {
+                    nodes[k].used = 1;
+                    return [k, j];
+                }
+            }
+        }
+        return [-1, -1];
+    }
+
+    //Ищем индекс второго незадействованного минимального узла
+    function NextNode(k) {
+        for (let i = k + 1; i < nodes.length; i++) {
+            if ((nodes[i].used == 0) && (nodes[k].code.slice(0, - 1) == nodes[i].code.slice(0, - 1))) {
+                nodes[i].used = 1;
+                return i;
+            }
+        }
+        return (-1);
+    }
+
+    //Раскодирование по дереву
+    function SearchChar2(node, n, l) {
+        let code = coded_string.slice(n, n + l);
+        //console.log(code);
+        if (node.left.code == code) {
+            if (node.left.chars.length == 1) { 
+                return node.left; 
+            }else {
+                l++;
+                return SearchChar2(node.left, n, l);
+            }
+        }
+        if (node.right.code == code) {
+            if (node.right.chars.length == 1) { 
+                return node.right; 
+            }else {
+                l++;
+                return SearchChar2(node.right, n, l);
+            }
+        }
+    }
+
+    ///////
+    //Пишем полученные данные из ввода в переменные
+    for (let i = 0; i < 10; i++) { if (arr_input[arr_input.length - 1] == "") { arr_input.pop(); } else { break; }     }
+    for (let i in arr_input) {
+        if (i == 0) {
+            let tmp = arr_input[i].split(" ");
+            num = tmp[0];                        //количество уникальных символов
+            len = tmp[1];                        //длина закодированной строки
+        } else if ((i > 0) && (i < (arr_input.length - 1))) {
+            let tmp = arr_input[i].split(": ");     //символы и их коды пишем в дерево как листья
+            let node = new Node();				    //Временная переменная для добавления в очередь
+            node.code = tmp[1];           	        //Получаем частоту символа и присваиваем временной переменной
+            node.chars = tmp[0];					//Присваиваем букву временной переменной
+            node.sum = Math.abs(num / 2) - node.code.length;
+            node.used = 0;
+            nodes.push(node);					    //Добавляем значения временной переменной в дерево
+        } else {
+            coded_string = arr_input[i];         //закодированная строка
+        }
+    }
+
+    nodes.sort(NodeSortUp);                       //Сортируем листья по сумме
+    var str = "";
+    if (num > 1) {
+        var count = nodes.length;
+        for (let k = 0; k < count; k++) {            //добавляем узлы
+            var node1 = new Node();
+            var node2 = new Node();
+            let arr = UnusedNode();
+            if ((arr[0] != -1) && (arr[1] != -1)) {
+                let code = nodes[arr[0]].code.slice(0, - 1);
+                nodes.push({
+                    sum: nodes[arr[0]].sum + nodes[arr[1]].sum,
+                    chars: nodes[arr[0]].chars + nodes[arr[1]].chars,
+                    code: code,
+                    left: nodes[arr[0]],
+                    right: nodes[arr[1]],
+                    used: 0
+                });
+            }
+            nodes.sort(NodeSortDown);			        //Сортируем дерево по коду 
+        }
+
+        ///////
+        var sb = [];
+        var tmp = "";
+        for (let i = 0; i < coded_string.length;) {                      //Получаем раскодированную строку
+            let tmp_node = new Node();
+            tmp_node = SearchChar2(nodes[nodes.length - 1], i, 1);
+            tmp = tmp_node.chars;
+            sb.push(tmp);
+            i += tmp_node.code.length;
+        }
+        str = sb.toString().replace(/,/g, '');
+    } else {
+        for (let i = 0; i < len; i++) {
+            str += nodes[0].chars;
+        }
+
+    }
+    console.log(str);
+});
