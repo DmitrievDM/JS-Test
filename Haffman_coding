@@ -1,0 +1,153 @@
+'use strict';
+
+var stdin = process.openStdin();
+
+stdin.on('data', function (data) {
+    var input = data.toString();
+    var arr_input = input.split("");
+    //Узлы бинарного дерева
+    function Node(sum = 0, code = "", chars = "", left = null, right = null, used = 0) {
+        this.sum = sum;                         //частота символов
+        this.code = code;                       //код символа / узла
+        this.chars = chars;                     //символы
+        this.left = left;                       //левый узел
+        this.right = right;                     //правый узел
+        this.used = used;                       //признак использования
+    }
+    //Сортировщик узлов дерева по частоте/ вызов - nodes.sort(NodeSort);
+    function NodeSort(a, b) {
+        if (a.sum > b.sum) return 1;
+        else if (a.sum < b.sum) return -1;
+        else return 0;
+    }
+    //Ищет объект в массиве nodes с нужным символом и возвращает 1 в случае успеха, 0 в случае неудачи
+    function FindChar(nodes, c) {
+        for (let i in nodes) {
+            if (nodes[i].chars == c) return 1;
+        };
+        return 0;
+    }
+    //Возвращает частоту символов в строке(c - символ, input - строка)
+    function CountChars(input, c) {
+        var count = input.Length - input.Replace(c.ToString(), "").Length;
+        return count;
+    };
+    //Возвращает код узла
+    function FindCode(nodes, c) {
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i].chars == c) {
+                //console.log(nodes[i].code);
+                return nodes[i].code;
+            };
+        };
+        return "";
+    }
+    //Удаляем всё небуквенное
+    function tgtrimm(str) {
+        var ars = str.replace(/[^a-zA-ZА-Яа-яЁё]/gi, '');
+        return ars;
+    }
+
+    //Ищем индекс незадействованного минимального узла
+    function UnusedNode(nodes) {
+        var count = nodes.length;
+        for (let k = 0; k < count; k++) {
+            if (nodes[k].used == 0) {
+                nodes[k].used = 1;
+                return k;
+            };
+        };
+        return -1;
+    }
+
+    ///////
+    var count_of_n = 0;
+    var map = new Map();
+    input = tgtrimm(input);
+    for (let i in input) {
+        let c = input[i];
+        if (map.has(c)) {
+            map.set(c, map.get(c) + 1);
+        } else {
+            if (c != '\n') { map.set(c, 1); }
+            else count_of_n += 1;
+        };
+        //console.log(c + ": " + map.get(c));
+    };
+
+    if (map.size > 1) {                             //Если число уникальных символов > 1
+        var nodes = [];
+        for (let c of map.keys()) {		            //Заполняем дерево листьями
+            let node = new Node();				    //Временная переменная для добавления в очередь
+            node.sum = map.get(c);           	    //Получаем частоту символа и присваиваем временной переменной
+            node.chars = c;						    //Присваиваем букву временной переменной
+            nodes.push(node);					    //Добавляем значения временной переменной в дерево
+        };
+        nodes.sort(NodeSort);                       //Сортируем массив по частоте
+        //console.log(nodes);
+        var i = 0;
+        var j = 1;
+        var count = nodes.length;
+
+        for (let k = 0; k < count; k++) {            //добавляем узлы
+            var l;
+            var r;
+            r = UnusedNode(nodes);
+            var node1 = nodes[r];
+            var node2 = new Node();
+            l = UnusedNode(nodes);
+            if (l != -1) {
+                node2 = nodes[l];
+                nodes.push({
+                    sum: node1.sum + node2.sum,
+                    chars: node1.chars + node2.chars,
+                    code: "",
+                    left: nodes[l],
+                    right: nodes[r],
+                    used: 0
+                });
+            };
+            nodes.sort(NodeSort);			        //Сортируем очередь по возрастанию частоты
+            //i += 2;
+            //j += 2;
+        };
+        //console.log(nodes);
+        ///////
+        count = nodes.length;
+        for (let k = count - 1; k > 1; k--) {        //вычисляем коды листьев
+            if (nodes[k].code == null) nodes[k].code = "";
+            if (k < nodes.length) {
+                if (nodes[k].left != null) {
+                    nodes[k].left.code = nodes[k].code + "0";
+                };
+                if (nodes[k].right != null) {
+                    nodes[k].right.code = nodes[k].code + "1";
+                };
+            };
+        };
+        //console.log(nodes);
+        ///////
+        var sb = "";
+        for (let i in input) {                      //Получаем закодированную строку
+            let c = input[i];
+            //console.log(c);
+            var code = FindCode(nodes, c);
+            if (code != "") {
+                sb += (code);
+            };
+        };
+        console.log(map.size + " " + sb.length);    //Вывод количества уникальных символов и длины закодированной строки
+        for (let h = nodes.length - 1; h >= 0; h--) {        //Печать дерева
+            if (nodes[h].chars.length == 1) console.log(nodes[h].chars + ": " + nodes[h].code);
+        };
+        console.log(sb);
+    } else {                                        //Если число уникальных символов = 1
+        console.log("1 " + (input.length));
+        console.log(input[0] + ": 0");
+        let sb = "";
+        for (let i = 0; i < input.length; i++) {
+            sb += "0";
+        };
+        console.log(sb);
+    };
+});
